@@ -103,4 +103,50 @@ class ArticleController extends Controller
         return redirect()->route('admin.articles.index')
             ->with('success', count($validated['article_ids']) . " articles {$actionText} successfully!");
     }
+
+    public function drafts()
+    {
+        // Only editors and admins can access draft approval queue
+        if (!auth()->user()->canPublishArticle()) {
+            abort(403, 'Only editors and admins can approve drafts.');
+        }
+
+        // Get all draft articles from contributors
+        $drafts = Article::query()
+            ->where('status', 'draft')
+            ->whereHas('author', function ($query) {
+                $query->where('role', 'contributor');
+            })
+            ->with(['author', 'category'])
+            ->orderBy('created_at', 'asc')
+            ->paginate(20);
+
+        return view('admin.drafts.index', compact('drafts'));
+    }
+
+    public function approveDraft(Article $article)
+    {
+        // Only editors and admins can approve drafts
+        if (!auth()->user()->canPublishArticle()) {
+            return redirect()->back()->with('error', 'You do not have permission to approve drafts.');
+        }
+
+        // Verify article is a draft from a contributor
+        if ($article->status !== 'draft') {
+            return redirect()->back()->with('error', 'This article is not a draft.');
+        }
+
+        if ($article->author->role !== 'contributor') {
+            return redirect()->back()->with('error', 'Only contributor articles need approval.');
+        }
+
+        // Approve and publish the article
+        $article->update([
+            'status' => 'published',
+            'published_at' => now(),
+        ]);
+
+        return redirect()->route('admin.drafts.index')
+            ->with('success', "Article \"{$article->title}\" has been approved and published!");
+    }
 }

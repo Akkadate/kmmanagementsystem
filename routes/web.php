@@ -9,6 +9,7 @@ use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Admin\CategoryController as AdminCategoryController;
 use App\Http\Controllers\Admin\TagController as AdminTagController;
 use App\Http\Controllers\Admin\ArticleController as AdminArticleController;
+use App\Http\Controllers\Admin\UserController as AdminUserController;
 use Illuminate\Support\Facades\Route;
 
 // Suppress browser extension requests (WordPress REST API check)
@@ -60,6 +61,15 @@ Route::middleware('auth')->group(function () {
         // Article Management
         Route::get('/articles', [AdminArticleController::class, 'index'])->name('articles.index');
         Route::post('/articles/bulk-update', [AdminArticleController::class, 'bulkUpdate'])->name('articles.bulk-update');
+
+        // Draft Approval (editors and admins only)
+        Route::get('/drafts', [AdminArticleController::class, 'drafts'])->name('drafts.index');
+        Route::patch('/drafts/{article}/approve', [AdminArticleController::class, 'approveDraft'])->name('drafts.approve');
+
+        // User Management (admin only)
+        Route::middleware('can:viewAny,App\Models\User')->group(function () {
+            Route::resource('users', AdminUserController::class)->except(['show']);
+        });
     });
 });
 
