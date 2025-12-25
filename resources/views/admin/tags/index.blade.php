@@ -12,9 +12,9 @@
     </div>
 @endif
 
-<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+<div class="grid grid-cols-1 xl:grid-cols-4 gap-6">
     <!-- Create Tag Form -->
-    <div class="lg:col-span-1">
+    <div class="xl:col-span-1">
         <div class="bg-white shadow rounded-lg p-6 sticky top-6">
             <h2 class="text-xl font-bold text-gray-900 mb-4">Create New Tag</h2>
             <form action="{{ route('admin.tags.store') }}" method="POST">
@@ -58,7 +58,7 @@
     </div>
 
     <!-- Tags List -->
-    <div class="lg:col-span-2">
+    <div class="xl:col-span-3">
         <div class="bg-white shadow rounded-lg overflow-hidden">
             <table class="w-full">
                 <thead class="bg-gray-50 border-b border-gray-200">
