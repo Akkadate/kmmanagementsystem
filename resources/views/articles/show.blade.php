@@ -55,7 +55,7 @@
                         </button>
                     </form>
                 @else
-                    <p class="text-gray-500">Please <a href="{{ route('login') }}" class="text-blue-600 hover:text-blue-800">login</a> to provide feedback.</p>
+                    <p class="text-gray-500">Please login to provide feedback. (Authentication coming soon)</p>
                 @endauth
             </div>
         </div>

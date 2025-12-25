@@ -33,17 +33,7 @@
                         </div>
                     </div>
                     <div class="hidden sm:ml-6 sm:flex sm:items-center">
-                        @auth
-                            <span class="text-gray-700 mr-4">{{ auth()->user()->name }}</span>
-                            <form method="POST" action="{{ route('logout') }}">
-                                @csrf
-                                <button type="submit" class="text-gray-500 hover:text-gray-700">
-                                    Logout
-                                </button>
-                            </form>
-                        @else
-                            <a href="{{ route('login') }}" class="text-gray-500 hover:text-gray-700">Login</a>
-                        @endauth
+                        <span class="text-gray-500 text-sm">Guest Mode</span>
                     </div>
                 </div>
             </div>
