@@ -11,16 +11,24 @@ class ArticlePolicy
     /**
      * Determine whether the user can view any models.
      */
-    public function viewAny(User $user): bool
+    public function viewAny(?User $user): bool
     {
-        return false;
+        return true;
     }
 
     /**
      * Determine whether the user can view the model.
      */
-    public function view(User $user, Article $article): bool
+    public function view(?User $user, Article $article): bool
     {
+        if ($article->status === 'published') {
+            return true;
+        }
+
+        if ($user) {
+            return $user->isAdmin() || $user->isEditor() || $user->id === $article->author_id;
+        }
+
         return false;
     }
 
@@ -29,7 +37,7 @@ class ArticlePolicy
      */
     public function create(User $user): bool
     {
-        return false;
+        return in_array($user->role, ['admin', 'editor', 'contributor']) && $user->is_active;
     }
 
     /**
@@ -37,7 +45,23 @@ class ArticlePolicy
      */
     public function update(User $user, Article $article): bool
     {
-        return false;
+        if (!$user->is_active) {
+            return false;
+        }
+
+        return $user->canEditArticle($article);
+    }
+
+    /**
+     * Determine whether the user can publish the model.
+     */
+    public function publish(User $user, Article $article): bool
+    {
+        if (!$user->is_active) {
+            return false;
+        }
+
+        return $user->canPublishArticle();
     }
 
     /**
@@ -45,7 +69,11 @@ class ArticlePolicy
      */
     public function delete(User $user, Article $article): bool
     {
-        return false;
+        if (!$user->is_active) {
+            return false;
+        }
+
+        return $user->isAdmin() || $user->isEditor() || ($user->isContributor() && $user->id === $article->author_id);
     }
 
     /**
@@ -53,7 +81,7 @@ class ArticlePolicy
      */
     public function restore(User $user, Article $article): bool
     {
-        return false;
+        return $user->isAdmin() || $user->isEditor();
     }
 
     /**
@@ -61,6 +89,6 @@ class ArticlePolicy
      */
     public function forceDelete(User $user, Article $article): bool
     {
-        return false;
+        return $user->isAdmin();
     }
 }
