@@ -161,7 +161,7 @@ class AnalyticsService
 
     public function getUserContributions(): array
     {
-        return User::query()
+        $users = User::query()
             ->whereIn('role', ['admin', 'editor', 'contributor'])
             ->withCount([
                 'articles as total_articles',
@@ -169,18 +169,21 @@ class AnalyticsService
                     $query->where('status', 'published');
                 }
             ])
-            ->having('total_articles', '>', 0)
-            ->orderBy('published_articles', 'desc')
-            ->limit(10)
             ->get()
-            ->map(function ($user) {
-                return [
-                    'user' => $user,
-                    'total_articles' => $user->total_articles,
-                    'published_articles' => $user->published_articles,
-                    'draft_articles' => $user->total_articles - $user->published_articles,
-                ];
+            ->filter(function ($user) {
+                return $user->total_articles > 0;
             })
-            ->toArray();
+            ->sortByDesc('published_articles')
+            ->take(10)
+            ->values();
+
+        return $users->map(function ($user) {
+            return [
+                'user' => $user,
+                'total_articles' => $user->total_articles,
+                'published_articles' => $user->published_articles,
+                'draft_articles' => $user->total_articles - $user->published_articles,
+            ];
+        })->toArray();
     }
 }
