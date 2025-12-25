@@ -56,6 +56,138 @@ class ArticleController extends Controller
         return view('articles.show', compact('article', 'relatedArticles'));
     }
 
+    public function create()
+    {
+        $this->authorize('create', Article::class);
+
+        $categories = Category::orderBy('name')->get();
+        $tags = Tag::orderBy('name')->get();
+
+        return view('articles.create', compact('categories', 'tags'));
+    }
+
+    public function store(Request $request)
+    {
+        $this->authorize('create', Article::class);
+
+        $validated = $request->validate([
+            'title' => 'required|string|max:255',
+            'excerpt' => 'nullable|string|max:500',
+            'content' => 'required|string',
+            'category_id' => 'required|exists:categories,id',
+            'tags' => 'nullable|array',
+            'tags.*' => 'exists:tags,id',
+            'status' => 'required|in:draft,published',
+            'featured_image' => 'nullable|image|max:2048',
+        ]);
+
+        $slug = \Illuminate\Support\Str::slug($validated['title']);
+        $originalSlug = $slug;
+        $counter = 1;
+
+        while (Article::where('slug', $slug)->exists()) {
+            $slug = $originalSlug . '-' . $counter;
+            $counter++;
+        }
+
+        $article = Article::create([
+            'title' => $validated['title'],
+            'slug' => $slug,
+            'excerpt' => $validated['excerpt'],
+            'content' => $validated['content'],
+            'category_id' => $validated['category_id'],
+            'author_id' => auth()->id(),
+            'status' => $validated['status'],
+            'published_at' => $validated['status'] === 'published' ? now() : null,
+        ]);
+
+        if (isset($validated['tags'])) {
+            $article->tags()->sync($validated['tags']);
+        }
+
+        if ($request->hasFile('featured_image')) {
+            $article->addMediaFromRequest('featured_image')
+                ->toMediaCollection('featured_image');
+        }
+
+        return redirect()->route('articles.show', $article->slug)
+            ->with('success', 'Article created successfully!');
+    }
+
+    public function edit(Article $article)
+    {
+        $this->authorize('update', $article);
+
+        $categories = Category::orderBy('name')->get();
+        $tags = Tag::orderBy('name')->get();
+        $article->load('tags');
+
+        return view('articles.edit', compact('article', 'categories', 'tags'));
+    }
+
+    public function update(Request $request, Article $article)
+    {
+        $this->authorize('update', $article);
+
+        $validated = $request->validate([
+            'title' => 'required|string|max:255',
+            'excerpt' => 'nullable|string|max:500',
+            'content' => 'required|string',
+            'category_id' => 'required|exists:categories,id',
+            'tags' => 'nullable|array',
+            'tags.*' => 'exists:tags,id',
+            'status' => 'required|in:draft,published',
+            'featured_image' => 'nullable|image|max:2048',
+        ]);
+
+        if ($validated['title'] !== $article->title) {
+            $slug = \Illuminate\Support\Str::slug($validated['title']);
+            $originalSlug = $slug;
+            $counter = 1;
+
+            while (Article::where('slug', $slug)->where('id', '!=', $article->id)->exists()) {
+                $slug = $originalSlug . '-' . $counter;
+                $counter++;
+            }
+
+            $article->slug = $slug;
+        }
+
+        $article->update([
+            'title' => $validated['title'],
+            'excerpt' => $validated['excerpt'],
+            'content' => $validated['content'],
+            'category_id' => $validated['category_id'],
+            'status' => $validated['status'],
+            'published_at' => $validated['status'] === 'published' && !$article->published_at ? now() : $article->published_at,
+        ]);
+
+        if (isset($validated['tags'])) {
+            $article->tags()->sync($validated['tags']);
+        } else {
+            $article->tags()->detach();
+        }
+
+        if ($request->hasFile('featured_image')) {
+            $article->clearMediaCollection('featured_image');
+            $article->addMediaFromRequest('featured_image')
+                ->toMediaCollection('featured_image');
+        }
+
+        return redirect()->route('articles.show', $article->slug)
+            ->with('success', 'Article updated successfully!');
+    }
+
+    public function destroy(Article $article)
+    {
+        $this->authorize('delete', $article);
+
+        $article->delete();
+
+        return redirect()->route('articles.index')
+            ->with('success', 'Article deleted successfully!');
+    }
+
     private function getRelatedArticles(Article $article, int $limit = 5)
     {
         $tagIds = $article->tags->pluck('id');

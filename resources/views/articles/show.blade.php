@@ -12,7 +12,16 @@
                 @endif
             </div>
 
-            <h1 class="text-4xl font-bold text-gray-900 mb-4">{{ $article->title }}</h1>
+            <div class="flex items-center justify-between mb-4">
+                <h1 class="text-4xl font-bold text-gray-900">{{ $article->title }}</h1>
+                @can('update', $article)
+                    <div class="flex gap-2">
+                        <a href="{{ route('articles.edit', $article->slug) }}" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm">
+                            Edit Article
+                        </a>
+                    </div>
+                @endcan
+            </div>
 
             <div class="flex items-center text-sm text-gray-500 mb-6 pb-6 border-b">
                 <span>By {{ $article->author->name }}</span>
@@ -55,7 +64,9 @@
                         </button>
                     </form>
                 @else
-                    <p class="text-gray-500">Please login to provide feedback. (Authentication coming soon)</p>
+                    <p class="text-gray-500">
+                        Please <a href="{{ route('login') }}" class="text-blue-600 hover:text-blue-800">login</a> to provide feedback.
+                    </p>
                 @endauth
             </div>
         </div>
