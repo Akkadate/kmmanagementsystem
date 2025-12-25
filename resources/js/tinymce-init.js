@@ -54,8 +54,24 @@ document.addEventListener('DOMContentLoaded', function() {
                 editor.on('init', function() {
                     console.log('TinyMCE editor initialized successfully (self-hosted)');
                 });
+
+                // Sync content to textarea before form submission
+                editor.on('change', function() {
+                    editor.save();
+                });
             }
         });
+
+        // Ensure content is saved before form submit
+        const form = contentField.closest('form');
+        if (form) {
+            form.addEventListener('submit', function(e) {
+                // Trigger TinyMCE to save content to textarea
+                if (tinymce.get('content')) {
+                    tinymce.get('content').save();
+                }
+            });
+        }
     }
 });
 
