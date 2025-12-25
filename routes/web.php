@@ -7,6 +7,11 @@ use App\Http\Controllers\SearchController;
 use App\Http\Controllers\FeedbackController;
 use Illuminate\Support\Facades\Route;
 
+// Suppress browser extension requests (WordPress REST API check)
+Route::match(['GET', 'HEAD'], '/wp-json', function () {
+    return response()->json(['message' => 'Not a WordPress site'], 404);
+});
+
 // Public routes
 Route::get('/', [ArticleController::class, 'index'])->name('articles.index');
 Route::get('/categories', [CategoryController::class, 'index'])->name('categories.index');
