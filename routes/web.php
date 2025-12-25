@@ -11,6 +11,7 @@ use App\Http\Controllers\Admin\CategoryController as AdminCategoryController;
 use App\Http\Controllers\Admin\TagController as AdminTagController;
 use App\Http\Controllers\Admin\ArticleController as AdminArticleController;
 use App\Http\Controllers\Admin\UserController as AdminUserController;
+use App\Http\Controllers\Admin\AnalyticsController as AdminAnalyticsController;
 use Illuminate\Support\Facades\Route;
 
 // Suppress browser extension requests (WordPress REST API check)
@@ -79,6 +80,12 @@ Route::middleware('auth')->group(function () {
         Route::middleware('can:viewAny,App\Models\User')->group(function () {
             Route::resource('users', AdminUserController::class)->except(['show']);
         });
+
+        // Analytics (editors and admins only)
+        Route::get('/analytics', [AdminAnalyticsController::class, 'dashboard'])->name('analytics.dashboard');
+        Route::get('/analytics/top-articles', [AdminAnalyticsController::class, 'topArticles'])->name('analytics.top-articles');
+        Route::get('/analytics/activity-logs', [AdminAnalyticsController::class, 'activityLogs'])->name('analytics.activity-logs');
+        Route::get('/analytics/feedback', [AdminAnalyticsController::class, 'feedback'])->name('analytics.feedback');
     });
 });
 
