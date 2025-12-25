@@ -47,7 +47,7 @@ class AnalyticsService
 
     public function getFeedbackStats(): array
     {
-        $stats = Article::query()
+        $articles = Article::query()
             ->where('status', 'published')
             ->withCount([
                 'feedback as helpful_count' => function ($query) {
@@ -58,25 +58,26 @@ class AnalyticsService
                 },
                 'feedback as total_feedback'
             ])
-            ->having('total_feedback', '>', 0)
-            ->orderBy('helpful_count', 'desc')
-            ->limit(20)
             ->get()
-            ->map(function ($article) {
-                $total = $article->total_feedback;
-                $helpful = $article->helpful_count;
-
-                return [
-                    'article' => $article,
-                    'helpful_count' => $helpful,
-                    'not_helpful_count' => $article->not_helpful_count,
-                    'total_feedback' => $total,
-                    'helpful_percentage' => $total > 0 ? round(($helpful / $total) * 100, 1) : 0,
-                ];
+            ->filter(function ($article) {
+                return $article->total_feedback > 0;
             })
-            ->toArray();
+            ->sortByDesc('helpful_count')
+            ->take(20)
+            ->values();
 
-        return $stats;
+        return $articles->map(function ($article) {
+            $total = $article->total_feedback;
+            $helpful = $article->helpful_count;
+
+            return [
+                'article' => $article,
+                'helpful_count' => $helpful,
+                'not_helpful_count' => $article->not_helpful_count,
+                'total_feedback' => $total,
+                'helpful_percentage' => $total > 0 ? round(($helpful / $total) * 100, 1) : 0,
+            ];
+        })->toArray();
     }
 
     public function getArticleHelpfulRatio(int $articleId): ?float
