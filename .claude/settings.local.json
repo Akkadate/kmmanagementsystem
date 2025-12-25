@@ -14,7 +14,9 @@
       "Bash(psql:*)",
       "Bash(php artisan migrate:fresh:*)",
       "Bash(php artisan make:model:*)",
-      "Bash(php artisan:*)"
+      "Bash(php artisan:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)"
     ]
   }
 }
