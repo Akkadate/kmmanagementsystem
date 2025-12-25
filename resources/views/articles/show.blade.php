@@ -14,13 +14,29 @@
 
             <div class="flex items-center justify-between mb-4">
                 <h1 class="text-4xl font-bold text-gray-900">{{ $article->title }}</h1>
-                @can('update', $article)
-                    <div class="flex gap-2">
+                <div class="flex gap-2">
+                    @auth
+                        @php
+                            $isBookmarked = auth()->user()->bookmarks()->where('article_id', $article->id)->exists();
+                        @endphp
+                        <form action="{{ route('bookmarks.store', $article->id) }}" method="POST">
+                            @csrf
+                            <input type="hidden" name="article_id" value="{{ $article->id }}">
+                            <button type="submit" class="px-4 py-2 rounded text-sm flex items-center
+                                {{ $isBookmarked ? 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200' : 'bg-gray-200 text-gray-700 hover:bg-gray-300' }}">
+                                <svg class="w-5 h-5 mr-1 {{ $isBookmarked ? 'fill-current' : '' }}" fill="{{ $isBookmarked ? 'currentColor' : 'none' }}" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"></path>
+                                </svg>
+                                {{ $isBookmarked ? 'Bookmarked' : 'Bookmark' }}
+                            </button>
+                        </form>
+                    @endauth
+                    @can('update', $article)
                         <a href="{{ route('articles.edit', $article->slug) }}" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm">
                             Edit Article
                         </a>
-                    </div>
-                @endcan
+                    @endcan
+                </div>
             </div>
 
             <div class="flex items-center text-sm text-gray-500 mb-6 pb-6 border-b">
