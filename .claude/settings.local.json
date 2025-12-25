@@ -11,7 +11,8 @@
       "Bash(composer require:*)",
       "Bash(npm install:*)",
       "Bash(npx tailwindcss init)",
-      "Bash(psql:*)"
+      "Bash(psql:*)",
+      "Bash(php artisan migrate:fresh:*)"
     ]
   }
 }
