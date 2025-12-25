@@ -37,8 +37,16 @@
                 </div>
             @endif
 
-            <div class="prose max-w-none mb-8">
-                {!! nl2br(e($article->content)) !!}
+            @if($article->hasMedia('featured_image'))
+                <div class="mb-6">
+                    <img src="{{ $article->getFirstMediaUrl('featured_image') }}"
+                         alt="{{ $article->title }}"
+                         class="w-full h-auto rounded-lg shadow-lg">
+                </div>
+            @endif
+
+            <div class="prose prose-lg max-w-none mb-8">
+                {!! $article->content !!}
             </div>
 
             @if($article->tags->count() > 0)
