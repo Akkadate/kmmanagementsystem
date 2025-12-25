@@ -17,7 +17,6 @@ import 'tinymce/plugins/fullscreen';
 import 'tinymce/plugins/insertdatetime';
 import 'tinymce/plugins/media';
 import 'tinymce/plugins/table';
-import 'tinymce/plugins/help';
 import 'tinymce/plugins/wordcount';
 
 // Import skins
