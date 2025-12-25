@@ -40,15 +40,16 @@ document.addEventListener('DOMContentLoaded', function() {
             plugins: [
                 'advlist', 'autolink', 'lists', 'link', 'image', 'charmap', 'preview',
                 'anchor', 'searchreplace', 'visualblocks', 'code', 'fullscreen',
-                'insertdatetime', 'media', 'table', 'help', 'wordcount'
+                'insertdatetime', 'media', 'table', 'wordcount'
             ],
             toolbar: 'undo redo | blocks | ' +
                 'bold italic forecolor | alignleft aligncenter ' +
                 'alignright alignjustify | bullist numlist outdent indent | ' +
-                'removeformat | code | help',
+                'removeformat | code',
             promotion: false,
             branding: false,
             license_key: 'gpl',
+            language: 'en',
             setup: function(editor) {
                 editor.on('init', function() {
                     console.log('TinyMCE editor initialized successfully (self-hosted)');
