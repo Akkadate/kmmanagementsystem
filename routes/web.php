@@ -5,6 +5,10 @@ use App\Http\Controllers\ArticleController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\SearchController;
 use App\Http\Controllers\FeedbackController;
+use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
+use App\Http\Controllers\Admin\CategoryController as AdminCategoryController;
+use App\Http\Controllers\Admin\TagController as AdminTagController;
+use App\Http\Controllers\Admin\ArticleController as AdminArticleController;
 use Illuminate\Support\Facades\Route;
 
 // Suppress browser extension requests (WordPress REST API check)
@@ -39,6 +43,24 @@ Route::middleware('auth')->group(function () {
 
     // Feedback
     Route::post('/articles/{article}/feedback', [FeedbackController::class, 'store'])->name('feedback.store');
+
+    // Admin Panel (admin and editor only)
+    Route::prefix('admin')->name('admin.')->middleware('can:viewAny,App\Models\Article')->group(function () {
+        Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
+
+        // Category Management
+        Route::resource('categories', AdminCategoryController::class)->except(['show']);
+
+        // Tag Management
+        Route::get('/tags', [AdminTagController::class, 'index'])->name('tags.index');
+        Route::post('/tags', [AdminTagController::class, 'store'])->name('tags.store');
+        Route::put('/tags/{tag}', [AdminTagController::class, 'update'])->name('tags.update');
+        Route::delete('/tags/{tag}', [AdminTagController::class, 'destroy'])->name('tags.destroy');
+
+        // Article Management
+        Route::get('/articles', [AdminArticleController::class, 'index'])->name('articles.index');
+        Route::post('/articles/bulk-update', [AdminArticleController::class, 'bulkUpdate'])->name('articles.bulk-update');
+    });
 });
 
 // Article show route - must come AFTER /articles/create to avoid conflict

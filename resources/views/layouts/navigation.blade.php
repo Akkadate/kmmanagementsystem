@@ -24,9 +24,9 @@
                                 {{ __('Create Article') }}
                             </x-nav-link>
                         @endcan
-                        @if(in_array(auth()->user()->role, ['admin', 'editor', 'contributor']))
-                            <x-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
-                                {{ __('Dashboard') }}
+                        @if(in_array(auth()->user()->role, ['admin', 'editor']))
+                            <x-nav-link :href="route('admin.dashboard')" :active="request()->routeIs('admin.*')">
+                                {{ __('Admin Panel') }}
                             </x-nav-link>
                         @endif
                     @endauth
