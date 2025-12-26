@@ -17,10 +17,16 @@ class CategoryFactory extends Factory
     public function definition(): array
     {
         $name = fake()->unique()->words(2, true);
+        $slug = \Illuminate\Support\Str::slug($name);
+
+        // If slug is empty (e.g., Thai characters), use a timestamp-based slug
+        if (empty($slug)) {
+            $slug = 'category-' . time() . '-' . uniqid();
+        }
 
         return [
             'name' => ucwords($name),
-            'slug' => \Illuminate\Support\Str::slug($name),
+            'slug' => $slug,
             'description' => fake()->sentence(),
             'parent_id' => null,
             'sort_order' => fake()->numberBetween(0, 100),

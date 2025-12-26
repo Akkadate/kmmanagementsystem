@@ -17,6 +17,11 @@ class Category extends Model
         'description',
         'parent_id',
         'sort_order',
+        'is_public',
+    ];
+
+    protected $casts = [
+        'is_public' => 'boolean',
     ];
 
     public function parent(): BelongsTo

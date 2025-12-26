@@ -15,10 +15,10 @@ class SearchService
 
         if (!empty($query)) {
             $searchQuery->whereRaw(
-                "search_vector_ts @@ plainto_tsquery('english', ?)",
+                "search_vector_ts @@ plainto_tsquery('simple', ?)",
                 [$query]
             )->orderByRaw(
-                "ts_rank(search_vector_ts, plainto_tsquery('english', ?)) DESC",
+                "ts_rank(search_vector_ts, plainto_tsquery('simple', ?)) DESC",
                 [$query]
             );
         }
@@ -45,11 +45,11 @@ class SearchService
         return Article::query()
             ->where('status', 'published')
             ->whereRaw(
-                "search_vector_ts @@ plainto_tsquery('english', ?)",
+                "search_vector_ts @@ plainto_tsquery('simple', ?)",
                 [$query]
             )
             ->orderByRaw(
-                "ts_rank(search_vector_ts, plainto_tsquery('english', ?)) DESC",
+                "ts_rank(search_vector_ts, plainto_tsquery('simple', ?)) DESC",
                 [$query]
             )
             ->limit($limit)

@@ -78,10 +78,18 @@ class ArticleController extends Controller
             'tags' => 'nullable|array',
             'tags.*' => 'exists:tags,id',
             'status' => 'required|in:draft,published',
+            'visibility' => 'required|in:public,members_only,staff_only,internal,private',
+            'department_id' => 'nullable|exists:departments,id',
             'featured_image' => 'nullable|image|max:2048',
         ]);
 
         $slug = \Illuminate\Support\Str::slug($validated['title']);
+
+        // If slug is empty (e.g., Thai characters), use a timestamp-based slug
+        if (empty($slug)) {
+            $slug = 'article-' . time();
+        }
+
         $originalSlug = $slug;
         $counter = 1;
 
@@ -98,6 +106,8 @@ class ArticleController extends Controller
             'category_id' => $validated['category_id'],
             'author_id' => auth()->id(),
             'status' => $validated['status'],
+            'visibility' => $validated['visibility'],
+            'department_id' => $validated['department_id'] ?? null,
             'published_at' => $validated['status'] === 'published' ? now() : null,
         ]);
 
@@ -106,8 +116,8 @@ class ArticleController extends Controller
         }
 
         if ($request->hasFile('featured_image')) {
-            $article->addMediaFromRequest('featured_image')
-                ->toMediaCollection('featured_image');
+            $path = $request->file('featured_image')->store('articles', 'public');
+            $article->update(['featured_image' => $path]);
         }
 
         return redirect()->route('articles.show', $article->slug)
@@ -137,11 +147,19 @@ class ArticleController extends Controller
             'tags' => 'nullable|array',
             'tags.*' => 'exists:tags,id',
             'status' => 'required|in:draft,published',
+            'visibility' => 'required|in:public,members_only,staff_only,internal,private',
+            'department_id' => 'nullable|exists:departments,id',
             'featured_image' => 'nullable|image|max:2048',
         ]);
 
         if ($validated['title'] !== $article->title) {
             $slug = \Illuminate\Support\Str::slug($validated['title']);
+
+            // If slug is empty (e.g., Thai characters), use a timestamp-based slug
+            if (empty($slug)) {
+                $slug = 'article-' . time();
+            }
+
             $originalSlug = $slug;
             $counter = 1;
 
@@ -159,6 +177,8 @@ class ArticleController extends Controller
             'content' => $validated['content'],
             'category_id' => $validated['category_id'],
             'status' => $validated['status'],
+            'visibility' => $validated['visibility'],
+            'department_id' => $validated['department_id'] ?? null,
             'published_at' => $validated['status'] === 'published' && !$article->published_at ? now() : $article->published_at,
         ]);
 
@@ -168,10 +188,23 @@ class ArticleController extends Controller
             $article->tags()->detach();
         }
 
+        // Handle featured image removal
+        if ($request->input('remove_featured_image')) {
+            if ($article->featured_image) {
+                \Storage::disk('public')->delete($article->featured_image);
+                $article->update(['featured_image' => null]);
+            }
+        }
+
+        // Handle new featured image upload
         if ($request->hasFile('featured_image')) {
-            $article->clearMediaCollection('featured_image');
-            $article->addMediaFromRequest('featured_image')
-                ->toMediaCollection('featured_image');
+            // Delete old image if exists
+            if ($article->featured_image) {
+                \Storage::disk('public')->delete($article->featured_image);
+            }
+
+            $path = $request->file('featured_image')->store('articles', 'public');
+            $article->update(['featured_image' => $path]);
         }
 
         return redirect()->route('articles.show', $article->slug)

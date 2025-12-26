@@ -17,10 +17,16 @@ class ArticleFactory extends Factory
     public function definition(): array
     {
         $title = fake()->sentence();
+        $slug = \Illuminate\Support\Str::slug($title);
+
+        // If slug is empty (e.g., Thai characters), use a timestamp-based slug
+        if (empty($slug)) {
+            $slug = 'article-' . time() . '-' . uniqid();
+        }
 
         return [
             'title' => rtrim($title, '.'),
-            'slug' => \Illuminate\Support\Str::slug($title),
+            'slug' => $slug,
             'content' => fake()->paragraphs(5, true),
             'excerpt' => fake()->paragraph(),
             'category_id' => \App\Models\Category::factory(),

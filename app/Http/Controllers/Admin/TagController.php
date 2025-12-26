@@ -24,6 +24,12 @@ class TagController extends Controller
         ]);
 
         $slug = \Illuminate\Support\Str::slug($validated['name']);
+
+        // If slug is empty (e.g., Thai characters), use a timestamp-based slug
+        if (empty($slug)) {
+            $slug = 'tag-' . time();
+        }
+
         $originalSlug = $slug;
         $counter = 1;
 
@@ -49,6 +55,12 @@ class TagController extends Controller
 
         if ($validated['name'] !== $tag->name) {
             $slug = \Illuminate\Support\Str::slug($validated['name']);
+
+            // If slug is empty (e.g., Thai characters), use a timestamp-based slug
+            if (empty($slug)) {
+                $slug = 'tag-' . time();
+            }
+
             $originalSlug = $slug;
             $counter = 1;
 

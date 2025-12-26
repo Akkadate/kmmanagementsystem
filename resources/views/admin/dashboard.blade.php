@@ -123,6 +123,14 @@
                 <span class="text-orange-900 font-medium">Manage Users</span>
             </a>
             @endcan
+            @if(auth()->user()->isAdmin())
+            <a href="{{ route('admin.departments.index') }}" class="flex items-center p-3 bg-teal-50 rounded-lg hover:bg-teal-100 transition">
+                <svg class="w-6 h-6 text-teal-600 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
+                </svg>
+                <span class="text-teal-900 font-medium">Manage Departments</span>
+            </a>
+            @endif
             @if(in_array(auth()->user()->role, ['admin', 'editor']))
             <a href="{{ route('admin.analytics.dashboard') }}" class="flex items-center p-3 bg-pink-50 rounded-lg hover:bg-pink-100 transition">
                 <svg class="w-6 h-6 text-pink-600 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">

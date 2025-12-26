@@ -44,6 +44,16 @@
                 <option value="viewer" {{ request('role') == 'viewer' ? 'selected' : '' }}>Viewer</option>
             </select>
         </div>
+        <div>
+            <select name="department" class="px-4 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                <option value="">All Departments</option>
+                @foreach($departments as $dept)
+                    <option value="{{ $dept->id }}" {{ request('department') == $dept->id ? 'selected' : '' }}>
+                        {{ $dept->name }}
+                    </option>
+                @endforeach
+            </select>
+        </div>
         <button type="submit" class="px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
             Filter
         </button>
@@ -60,6 +70,7 @@
             <tr>
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Department</th>
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Articles</th>
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Joined</th>
                 <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
@@ -90,6 +101,15 @@
                         </span>
                     </td>
                     <td class="px-6 py-4 text-sm text-gray-600">
+                        @if($user->department)
+                            <span class="px-2 py-1 text-xs bg-blue-50 text-blue-700 rounded">
+                                {{ $user->department->name }}
+                            </span>
+                        @else
+                            <span class="text-gray-400">-</span>
+                        @endif
+                    </td>
+                    <td class="px-6 py-4 text-sm text-gray-600">
                         {{ $user->articles()->count() }}
                     </td>
                     <td class="px-6 py-4 text-sm text-gray-600">
@@ -110,7 +130,7 @@
                 </tr>
             @empty
                 <tr>
-                    <td colspan="5" class="px-6 py-12 text-center text-gray-500">
+                    <td colspan="6" class="px-6 py-12 text-center text-gray-500">
                         No users found
                     </td>
                 </tr>

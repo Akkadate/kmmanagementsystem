@@ -17,10 +17,16 @@ class TagFactory extends Factory
     public function definition(): array
     {
         $name = fake()->unique()->word();
+        $slug = \Illuminate\Support\Str::slug($name);
+
+        // If slug is empty (e.g., Thai characters), use a timestamp-based slug
+        if (empty($slug)) {
+            $slug = 'tag-' . time() . '-' . uniqid();
+        }
 
         return [
             'name' => ucfirst($name),
-            'slug' => \Illuminate\Support\Str::slug($name),
+            'slug' => $slug,
         ];
     }
 }

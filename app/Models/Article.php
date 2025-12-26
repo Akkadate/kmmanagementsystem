@@ -18,9 +18,12 @@ class Article extends Model implements HasMedia
         'slug',
         'content',
         'excerpt',
+        'featured_image',
         'category_id',
         'author_id',
         'status',
+        'visibility',
+        'department_id',
         'view_count',
         'published_at',
     ];
@@ -60,5 +63,36 @@ class Article extends Model implements HasMedia
     public function feedback(): HasMany
     {
         return $this->hasMany(Feedback::class);
+    }
+
+    public function department(): BelongsTo
+    {
+        return $this->belongsTo(Department::class);
+    }
+
+    // Visibility helper methods
+    public function isPublic(): bool
+    {
+        return $this->visibility === 'public';
+    }
+
+    public function isMembersOnly(): bool
+    {
+        return $this->visibility === 'members_only';
+    }
+
+    public function isInternal(): bool
+    {
+        return $this->visibility === 'internal';
+    }
+
+    public function isPrivate(): bool
+    {
+        return $this->visibility === 'private';
+    }
+
+    public function isStaffOnly(): bool
+    {
+        return $this->visibility === 'staff_only';
     }
 }

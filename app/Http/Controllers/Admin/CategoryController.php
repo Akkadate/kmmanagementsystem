@@ -43,6 +43,12 @@ class CategoryController extends Controller
         ]);
 
         $slug = \Illuminate\Support\Str::slug($validated['name']);
+
+        // If slug is empty (e.g., Thai characters), use a timestamp-based slug
+        if (empty($slug)) {
+            $slug = 'category-' . time();
+        }
+
         $originalSlug = $slug;
         $counter = 1;
 
@@ -101,6 +107,12 @@ class CategoryController extends Controller
 
         if ($validated['name'] !== $category->name) {
             $slug = \Illuminate\Support\Str::slug($validated['name']);
+
+            // If slug is empty (e.g., Thai characters), use a timestamp-based slug
+            if (empty($slug)) {
+                $slug = 'category-' . time();
+            }
+
             $originalSlug = $slug;
             $counter = 1;
 

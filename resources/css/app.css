@@ -1,3 +1,66 @@
+/* Import Thai Fonts from Google Fonts */
+@import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700;800&family=Prompt:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600;700;800&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+    body {
+        @apply font-sans text-gray-900 antialiased;
+    }
+
+    h1, h2, h3, h4, h5, h6 {
+        @apply font-heading font-semibold;
+    }
+}
+
+@layer components {
+    /* Custom Button Styles */
+    .btn-primary {
+        @apply px-6 py-2.5 bg-primary-600 text-white rounded-lg font-medium shadow-lg shadow-primary-500/50 hover:bg-primary-700 hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200;
+    }
+
+    .btn-secondary {
+        @apply px-6 py-2.5 bg-gray-200 text-gray-700 rounded-lg font-medium hover:bg-gray-300 transform hover:-translate-y-0.5 transition-all duration-200;
+    }
+
+    /* Card Styles */
+    .card {
+        @apply bg-white rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden;
+    }
+
+    .card-hover {
+        @apply transform hover:-translate-y-1 hover:scale-[1.02] transition-all duration-300;
+    }
+
+    /* Badge Styles */
+    .badge {
+        @apply px-3 py-1 rounded-full text-sm font-medium;
+    }
+
+    /* Input Styles */
+    .input-field {
+        @apply w-full px-4 py-2.5 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all duration-200;
+    }
+
+    /* Link Styles */
+    .link-hover {
+        @apply text-primary-600 hover:text-primary-700 hover:underline transition-colors duration-200;
+    }
+}
+
+@layer utilities {
+    /* Custom Utilities */
+    .text-gradient {
+        @apply bg-clip-text text-transparent bg-gradient-to-r from-primary-600 to-blue-600;
+    }
+
+    .bg-gradient-primary {
+        @apply bg-gradient-to-r from-primary-500 to-blue-600;
+    }
+
+    .glass-effect {
+        @apply bg-white/80 backdrop-blur-md;
+    }
+}

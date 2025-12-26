@@ -6,12 +6,14 @@ use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\SearchController;
 use App\Http\Controllers\FeedbackController;
 use App\Http\Controllers\BookmarkController;
+use App\Http\Controllers\HomeController;
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Admin\CategoryController as AdminCategoryController;
 use App\Http\Controllers\Admin\TagController as AdminTagController;
 use App\Http\Controllers\Admin\ArticleController as AdminArticleController;
 use App\Http\Controllers\Admin\UserController as AdminUserController;
 use App\Http\Controllers\Admin\AnalyticsController as AdminAnalyticsController;
+use App\Http\Controllers\Admin\DepartmentController as AdminDepartmentController;
 use Illuminate\Support\Facades\Route;
 
 // Suppress browser extension requests (WordPress REST API check)
@@ -20,7 +22,8 @@ Route::match(['GET', 'HEAD'], '/wp-json', function () {
 });
 
 // Public routes
-Route::get('/', [ArticleController::class, 'index'])->name('articles.index');
+Route::get('/', [HomeController::class, 'index'])->name('home');
+Route::get('/articles', [ArticleController::class, 'index'])->name('articles.index');
 Route::get('/categories', [CategoryController::class, 'index'])->name('categories.index');
 Route::get('/categories/{category:slug}', [CategoryController::class, 'show'])->name('categories.show');
 Route::get('/search', [SearchController::class, 'index'])->name('search');
@@ -46,17 +49,19 @@ Route::middleware('auth')->group(function () {
     Route::delete('/bookmarks/{bookmark}', [BookmarkController::class, 'destroy'])->name('bookmarks.destroy');
 
     // Article management - IMPORTANT: specific routes must come before wildcard routes
-    Route::get('/articles/create', [ArticleController::class, 'create'])->name('articles.create');
-    Route::post('/articles', [ArticleController::class, 'store'])->name('articles.store');
-    Route::get('/articles/{article:slug}/edit', [ArticleController::class, 'edit'])->name('articles.edit');
-    Route::patch('/articles/{article:slug}', [ArticleController::class, 'update'])->name('articles.update');
-    Route::delete('/articles/{article:slug}', [ArticleController::class, 'destroy'])->name('articles.destroy');
+    Route::middleware('verified')->group(function () {
+        Route::get('/articles/create', [ArticleController::class, 'create'])->name('articles.create');
+        Route::post('/articles', [ArticleController::class, 'store'])->name('articles.store');
+        Route::get('/articles/{article:slug}/edit', [ArticleController::class, 'edit'])->name('articles.edit');
+        Route::patch('/articles/{article:slug}', [ArticleController::class, 'update'])->name('articles.update');
+        Route::delete('/articles/{article:slug}', [ArticleController::class, 'destroy'])->name('articles.destroy');
+    });
 
     // Feedback
     Route::post('/articles/{article}/feedback', [FeedbackController::class, 'store'])->name('feedback.store');
 
     // Admin Panel (admin and editor only)
-    Route::prefix('admin')->name('admin.')->middleware('can:viewAny,App\Models\Article')->group(function () {
+    Route::prefix('admin')->name('admin.')->middleware(['verified', 'can:viewAny,App\Models\Article'])->group(function () {
         Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
 
         // Category Management
@@ -70,6 +75,7 @@ Route::middleware('auth')->group(function () {
 
         // Article Management
         Route::get('/articles', [AdminArticleController::class, 'index'])->name('articles.index');
+        Route::post('/articles/upload-image', [AdminArticleController::class, 'uploadImage'])->name('articles.upload-image');
         Route::post('/articles/bulk-update', [AdminArticleController::class, 'bulkUpdate'])->name('articles.bulk-update');
 
         // Draft Approval (editors and admins only)
@@ -81,11 +87,18 @@ Route::middleware('auth')->group(function () {
             Route::resource('users', AdminUserController::class)->except(['show']);
         });
 
+        // Department Management (admin only)
+        Route::resource('departments', AdminDepartmentController::class)->except(['show']);
+
         // Analytics (editors and admins only)
         Route::get('/analytics', [AdminAnalyticsController::class, 'dashboard'])->name('analytics.dashboard');
         Route::get('/analytics/top-articles', [AdminAnalyticsController::class, 'topArticles'])->name('analytics.top-articles');
         Route::get('/analytics/activity-logs', [AdminAnalyticsController::class, 'activityLogs'])->name('analytics.activity-logs');
         Route::get('/analytics/feedback', [AdminAnalyticsController::class, 'feedback'])->name('analytics.feedback');
+
+        // Settings Management (admin only)
+        Route::get('/settings', [App\Http\Controllers\Admin\SettingsController::class, 'index'])->name('settings.index');
+        Route::put('/settings', [App\Http\Controllers\Admin\SettingsController::class, 'update'])->name('settings.update');
     });
 });
 

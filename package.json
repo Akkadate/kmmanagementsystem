@@ -21,6 +21,7 @@
         "@tinymce/tinymce-vue": "^6.3.0",
         "alpinejs": "^3.15.3",
         "htmx.org": "^2.0.8",
+        "sweetalert2": "^11.26.17",
         "tinymce": "^8.3.1"
     }
 }

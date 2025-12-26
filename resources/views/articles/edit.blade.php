@@ -19,7 +19,7 @@
                         Cancel
                     </a>
                     @can('delete', $article)
-                        <button type="button" onclick="if(confirm('Are you sure?')) document.getElementById('delete-form').submit();" class="ml-4 text-red-600 hover:text-red-800">
+                        <button type="button" onclick="handleDeleteArticle()" class="ml-4 text-red-600 hover:text-red-800">
                             Delete Article
                         </button>
                     @endcan
@@ -43,4 +43,16 @@
         @endcan
     </div>
 </div>
+
+@push('scripts')
+<script>
+async function handleDeleteArticle() {
+    const confirmed = await confirmDelete('Are you sure you want to delete this article? This action cannot be undone.');
+
+    if (confirmed) {
+        document.getElementById('delete-form').submit();
+    }
+}
+</script>
+@endpush
 @endsection

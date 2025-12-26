@@ -66,7 +66,10 @@ class ArticleController extends Controller
 
     public function bulkUpdate(Request $request)
     {
-        $this->authorize('update', Article::class);
+        // Check if user has permission to manage articles
+        if (!in_array(auth()->user()->role, ['admin', 'editor', 'contributor']) || !auth()->user()->is_active) {
+            abort(403, 'Unauthorized action.');
+        }
 
         $validated = $request->validate([
             'article_ids' => 'required|array',
@@ -148,5 +151,23 @@ class ArticleController extends Controller
 
         return redirect()->route('admin.drafts.index')
             ->with('success', "Article \"{$article->title}\" has been approved and published!");
+    }
+
+    public function uploadImage(Request $request)
+    {
+        $request->validate([
+            'file' => 'required|image|max:2048', // 2MB max
+        ]);
+
+        if ($request->hasFile('file')) {
+            $file = $request->file('file');
+            $path = $file->store('articles', 'public');
+
+            return response()->json([
+                'location' => asset('storage/' . $path)
+            ]);
+        }
+
+        return response()->json(['error' => 'No file uploaded'], 400);
     }
 }

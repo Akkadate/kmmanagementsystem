@@ -84,7 +84,7 @@
             <option value="draft">Set to Draft</option>
             <option value="delete">Delete</option>
         </select>
-        <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700" onclick="return confirmBulkAction()">
+        <button type="button" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700" onclick="handleBulkAction()">
             Apply
         </button>
     </div>
@@ -160,26 +160,30 @@ document.getElementById('selectAll').addEventListener('change', function() {
     checkboxes.forEach(cb => cb.checked = this.checked);
 });
 
-// Confirm bulk action
-function confirmBulkAction() {
+// Handle bulk action with confirmation
+async function handleBulkAction() {
     const selected = document.querySelectorAll('.article-checkbox:checked');
     const action = document.querySelector('select[name="action"]').value;
 
     if (selected.length === 0) {
-        alert('Please select at least one article');
-        return false;
+        showWarning('Please select at least one article');
+        return;
     }
 
     if (!action) {
-        alert('Please select an action');
-        return false;
+        showWarning('Please select an action');
+        return;
     }
 
     const message = action === 'delete'
         ? `Are you sure you want to delete ${selected.length} article(s)?`
         : `Are you sure you want to ${action} ${selected.length} article(s)?`;
 
-    return confirm(message);
+    const confirmed = await confirmAction('Confirm Action', message, 'Yes, proceed');
+
+    if (confirmed) {
+        document.querySelector('form[action="{{ route('admin.articles.bulk-update') }}"]').submit();
+    }
 }
 </script>
 @endpush

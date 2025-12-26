@@ -23,9 +23,16 @@ class ArticleSeeder extends Seeder
         $tags = [];
         $tagNames = ['Laravel', 'PHP', 'Database', 'API', 'Security', 'Performance', 'Testing', 'Deployment', 'Frontend', 'Backend'];
         foreach ($tagNames as $name) {
+            $slug = \Illuminate\Support\Str::slug($name);
+
+            // If slug is empty (e.g., Thai characters), use a timestamp-based slug
+            if (empty($slug)) {
+                $slug = 'tag-' . time() . '-' . uniqid();
+            }
+
             $tags[] = Tag::create([
                 'name' => $name,
-                'slug' => \Illuminate\Support\Str::slug($name),
+                'slug' => $slug,
             ]);
         }
 
@@ -93,9 +100,16 @@ class ArticleSeeder extends Seeder
             $category = $categories->random();
             $author = $users->random();
 
+            $slug = \Illuminate\Support\Str::slug($articleData['title']);
+
+            // If slug is empty (e.g., Thai characters), use a timestamp-based slug
+            if (empty($slug)) {
+                $slug = 'article-' . time() . '-' . uniqid();
+            }
+
             $article = Article::create([
                 'title' => $articleData['title'],
-                'slug' => \Illuminate\Support\Str::slug($articleData['title']),
+                'slug' => $slug,
                 'content' => $articleData['content'],
                 'excerpt' => $articleData['excerpt'],
                 'category_id' => $category->id,
