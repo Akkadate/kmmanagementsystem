@@ -3,7 +3,6 @@
 namespace Database\Seeders;
 
 use App\Models\Category;
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
 class CategorySeeder extends Seeder
@@ -13,56 +12,76 @@ class CategorySeeder extends Seeder
      */
     public function run(): void
     {
-        $technical = Category::create([
-            'name' => 'Technical Documentation',
-            'slug' => 'technical-documentation',
-            'description' => 'Technical guides and documentation',
-            'sort_order' => 1,
-        ]);
+        // Main category: Technical Documentation
+        $technical = Category::updateOrCreate(
+            ['slug' => 'technical-documentation'],
+            [
+                'name' => 'Technical Documentation',
+                'description' => 'Technical guides and documentation',
+                'sort_order' => 1,
+            ]
+        );
 
-        Category::create([
-            'name' => 'API Reference',
-            'slug' => 'api-reference',
-            'description' => 'API documentation and references',
-            'parent_id' => $technical->id,
-            'sort_order' => 1,
-        ]);
+        // Subcategories under Technical Documentation
+        Category::updateOrCreate(
+            ['slug' => 'api-reference'],
+            [
+                'name' => 'API Reference',
+                'description' => 'API documentation and references',
+                'parent_id' => $technical->id,
+                'sort_order' => 1,
+            ]
+        );
 
-        Category::create([
-            'name' => 'Getting Started',
-            'slug' => 'getting-started',
-            'description' => 'Getting started guides',
-            'parent_id' => $technical->id,
-            'sort_order' => 2,
-        ]);
+        Category::updateOrCreate(
+            ['slug' => 'getting-started'],
+            [
+                'name' => 'Getting Started',
+                'description' => 'Getting started guides',
+                'parent_id' => $technical->id,
+                'sort_order' => 2,
+            ]
+        );
 
-        $userGuides = Category::create([
-            'name' => 'User Guides',
-            'slug' => 'user-guides',
-            'description' => 'End-user documentation',
-            'sort_order' => 2,
-        ]);
+        // Main category: User Guides
+        $userGuides = Category::updateOrCreate(
+            ['slug' => 'user-guides'],
+            [
+                'name' => 'User Guides',
+                'description' => 'End-user documentation',
+                'sort_order' => 2,
+            ]
+        );
 
-        Category::create([
-            'name' => 'Tutorials',
-            'slug' => 'tutorials',
-            'description' => 'Step-by-step tutorials',
-            'parent_id' => $userGuides->id,
-            'sort_order' => 1,
-        ]);
+        // Subcategories under User Guides
+        Category::updateOrCreate(
+            ['slug' => 'tutorials'],
+            [
+                'name' => 'Tutorials',
+                'description' => 'Step-by-step tutorials',
+                'parent_id' => $userGuides->id,
+                'sort_order' => 1,
+            ]
+        );
 
-        Category::create([
-            'name' => 'FAQ',
-            'slug' => 'faq',
-            'description' => 'Frequently asked questions',
-            'sort_order' => 3,
-        ]);
+        // Main category: FAQ
+        Category::updateOrCreate(
+            ['slug' => 'faq'],
+            [
+                'name' => 'FAQ',
+                'description' => 'Frequently asked questions',
+                'sort_order' => 3,
+            ]
+        );
 
-        Category::create([
-            'name' => 'Troubleshooting',
-            'slug' => 'troubleshooting',
-            'description' => 'Common issues and solutions',
-            'sort_order' => 4,
-        ]);
+        // Main category: Troubleshooting
+        Category::updateOrCreate(
+            ['slug' => 'troubleshooting'],
+            [
+                'name' => 'Troubleshooting',
+                'description' => 'Common issues and solutions',
+                'sort_order' => 4,
+            ]
+        );
     }
 }

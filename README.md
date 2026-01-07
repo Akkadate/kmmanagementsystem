@@ -194,7 +194,9 @@ sudo apt install -y software-properties-common curl wget git unzip
 
 ---
 
-#### 2. ติดตั้ง PHP 8.2 และ Extensions
+#### 2. ติดตั้ง PHP และ Extensions
+
+**สำหรับ Ubuntu 22.04 LTS (PHP 8.2):**
 
 ```bash
 # เพิ่ม PPA repository สำหรับ PHP
@@ -211,7 +213,25 @@ sudo apt install -y php8.2 php8.2-cli php8.2-fpm php8.2-common \
 php --version
 ```
 
-**คาดหวังผลลัพธ์**: PHP 8.2.x
+**สำหรับ Ubuntu 25.04+ (PHP 8.4):**
+
+```bash
+# Ubuntu 25.04 มาพร้อม PHP 8.4 อยู่แล้ว ไม่ต้องเพิ่ม PPA
+sudo apt update
+
+# ติดตั้ง PHP 8.4 และ extensions ที่จำเป็น
+sudo apt install -y php8.4 php8.4-cli php8.4-fpm php8.4-common \
+    php8.4-mbstring php8.4-xml php8.4-bcmath php8.4-curl \
+    php8.4-gd php8.4-zip php8.4-pgsql php8.4-intl \
+    php8.4-dom php8.4-tokenizer
+
+# ตรวจสอบเวอร์ชัน PHP
+php --version
+```
+
+**คาดหวังผลลัพธ์**: PHP 8.2.x หรือ PHP 8.4.x
+
+**หมายเหตุ**: Laravel 11 รองรับ PHP 8.2 ขึ้นไป ดังนั้น PHP 8.4 ใช้งานได้ปกติ
 
 ---
 
@@ -494,6 +514,8 @@ server {
     error_page 404 /index.php;
 
     location ~ \.php$ {
+        # สำหรับ PHP 8.2 ใช้: unix:/var/run/php/php8.2-fpm.sock
+        # สำหรับ PHP 8.4 ใช้: unix:/var/run/php/php8.4-fpm.sock
         fastcgi_pass unix:/var/run/php/php8.2-fpm.sock;
         fastcgi_param SCRIPT_FILENAME $realpath_root$fastcgi_script_name;
         include fastcgi_params;
@@ -529,7 +551,11 @@ sudo systemctl reload nginx
 **แก้ไขไฟล์ php.ini**:
 
 ```bash
+# สำหรับ PHP 8.2
 sudo nano /etc/php/8.2/fpm/php.ini
+
+# สำหรับ PHP 8.4
+sudo nano /etc/php/8.4/fpm/php.ini
 ```
 
 **แก้ไขค่าเหล่านี้**:
@@ -544,8 +570,25 @@ max_execution_time = 300
 **Restart PHP-FPM**:
 
 ```bash
+# สำหรับ PHP 8.2
 sudo systemctl restart php8.2-fpm
+
+# สำหรับ PHP 8.4
+sudo systemctl restart php8.4-fpm
 ```
+
+**ตรวจสอบ PHP-FPM socket path**:
+
+```bash
+# ตรวจสอบว่า socket file มีอยู่จริง
+ls -la /var/run/php/
+
+# จะเห็นไฟล์เช่น:
+# php8.2-fpm.sock (สำหรับ PHP 8.2)
+# php8.4-fpm.sock (สำหรับ PHP 8.4)
+```
+
+**⚠️ สำคัญ**: ถ้าใช้ PHP 8.4 ต้องแก้ไข Nginx config ที่ขั้นตอนที่ 12 ให้ใช้ `php8.4-fpm.sock`
 
 ---
 
@@ -1433,7 +1476,212 @@ MAIL_FROM_NAME="${APP_NAME}"
 
 ## การแก้ปัญหา (Troubleshooting)
 
-### อีเมลยืนยันไม่ส่ง
+### ปัญหาที่พบบ่อยในการติดตั้ง
+
+#### 1. Faker\Factory not found (Production)
+
+**ปัญหา**:
+```bash
+php artisan db:seed --force
+Class "Faker\Factory" not found
+```
+
+**สาเหตุ**: ใน production ใช้ `composer install --no-dev` ซึ่งไม่ติดตั้ง faker (dev dependency)
+
+**วิธีแก้**:
+
+**ตัวเลือก 1**: ติดตั้ง faker ใน production (ไม่แนะนำ)
+```bash
+composer require fakerphp/faker
+```
+
+**ตัวเลือก 2**: ใช้ Seeder ที่แก้ไขแล้ว (แนะนำ)
+- Seeders ทั้งหมดถูกอัปเดตให้ไม่ใช้ Faker แล้ว
+- ใช้ `updateOrCreate()` เพื่อป้องกัน duplicate errors
+- Pull โค้ดล่าสุดแล้วรัน:
+```bash
+php artisan db:seed --force
+```
+
+---
+
+#### 2. Duplicate Key Errors
+
+**ปัญหา**:
+```bash
+duplicate key value violates unique constraint "users_email_unique"
+Key (email)=(admin@northbkk.ac.th) already exists
+```
+
+**สาเหตุ**: รัน seeder ซ้ำโดยไม่มีการตรวจสอบข้อมูลเดิม
+
+**วิธีแก้**:
+
+Seeders ทั้งหมดถูกอัปเดตให้ใช้ `updateOrCreate()` แทน `create()` แล้ว:
+
+```php
+// เดิม (จะ error ถ้ารันซ้ำ)
+User::create(['email' => 'admin@northbkk.ac.th', ...]);
+
+// ใหม่ (ปลอดภัย สามารถรันซ้ำได้)
+User::updateOrCreate(
+    ['email' => 'admin@northbkk.ac.th'],
+    ['name' => 'Admin User', ...]
+);
+```
+
+**ถ้ายังเจอปัญหา**: Reset database ใหม่
+```bash
+php artisan migrate:fresh --seed --force
+```
+
+⚠️ **คำเตือน**: คำสั่งนี้จะลบข้อมูลทั้งหมด!
+
+---
+
+#### 3. PHP Version และ Socket Path
+
+**ปัญหา**: Nginx แสดง 502 Bad Gateway
+
+**สาเหตุ**: PHP-FPM socket path ไม่ตรงกับ Nginx config
+
+**วิธีตรวจสอบ**:
+
+```bash
+# ตรวจสอบ PHP version ที่ติดตั้ง
+php --version
+
+# ตรวจสอบ PHP-FPM socket ที่มีอยู่
+ls -la /var/run/php/
+
+# ตรวจสอบ PHP-FPM service
+sudo systemctl status php8.2-fpm  # สำหรับ PHP 8.2
+sudo systemctl status php8.4-fpm  # สำหรับ PHP 8.4
+```
+
+**วิธีแก้**:
+
+1. **ถ้าใช้ PHP 8.4** แก้ไข Nginx config:
+```bash
+sudo nano /etc/nginx/sites-available/kmsystem
+```
+
+เปลี่ยนบรรทัด:
+```nginx
+# เปลี่ยนจาก
+fastcgi_pass unix:/var/run/php/php8.2-fpm.sock;
+
+# เป็น
+fastcgi_pass unix:/var/run/php/php8.4-fpm.sock;
+```
+
+2. **Test และ Reload Nginx**:
+```bash
+sudo nginx -t
+sudo systemctl reload nginx
+```
+
+---
+
+#### 4. PostgreSQL Permission Errors
+
+**ปัญหา**:
+```bash
+permission denied for schema public
+ERROR: permission denied for table users
+```
+
+**สาเหตุ**: PostgreSQL 15+ มีการเปลี่ยนแปลง default permissions
+
+**วิธีแก้**:
+
+```bash
+# เข้าสู่ PostgreSQL
+sudo -u postgres psql
+
+# เชื่อมต่อกับ database
+\c kmsystem
+
+# ให้สิทธิ์ใน public schema
+GRANT ALL ON SCHEMA public TO kmsystem_user;
+GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO kmsystem_user;
+GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO kmsystem_user;
+
+# ออกจาก PostgreSQL
+\q
+```
+
+---
+
+#### 5. Storage และ Upload Permissions
+
+**ปัญหา**:
+```bash
+The stream or file could not be opened in append mode
+failed to open stream: Permission denied
+```
+
+**สาเหตุ**: www-data ไม่มีสิทธิ์เขียนไฟล์
+
+**วิธีแก้**:
+
+```bash
+cd /var/www/kmsystem
+
+# ตั้งค่า owner
+sudo chown -R www-data:www-data storage bootstrap/cache public/uploads
+
+# ตั้งค่า permissions
+sudo chmod -R 775 storage bootstrap/cache public/uploads
+
+# ตรวจสอบ SELinux (ถ้ามี)
+sudo chcon -R -t httpd_sys_rw_content_t storage bootstrap/cache public/uploads
+```
+
+---
+
+#### 6. npm build errors
+
+**ปัญหา**:
+```bash
+npm ERR! code ELIFECYCLE
+npm ERR! errno 1
+```
+
+**วิธีแก้**:
+
+```bash
+# ลบ node_modules และ package-lock.json
+rm -rf node_modules package-lock.json
+
+# ติดตั้งใหม่
+npm install
+
+# Build อีกครั้ง
+npm run build
+```
+
+---
+
+#### 7. Composer memory limit
+
+**ปัญหา**:
+```bash
+Fatal error: Allowed memory size exhausted
+```
+
+**วิธีแก้**:
+
+```bash
+# เพิ่ม memory limit ชั่วคราว
+php -d memory_limit=-1 /usr/local/bin/composer install --optimize-autoloader --no-dev
+```
+
+---
+
+### ปัญหาระหว่างการใช้งาน
+
+#### อีเมลยืนยันไม่ส่ง
 
 1. ตรวจสอบ `.env` มี `MAIL_ENCRYPTION=tls`
 2. Clear config cache: `php artisan config:clear`
@@ -1445,18 +1693,62 @@ Mail::raw('Test', function($msg) {
 });
 ```
 
-### การตั้งค่าไม่บันทึก
+---
+
+#### การตั้งค่าไม่บันทึก
 
 1. ตรวจสอบ `$fillable` ใน Model
 2. Clear cache: `Setting::clearCache()`
 3. ตรวจสอบ permissions โฟลเดอร์ `storage/`
 
-### Visibility Level ใหม่ไม่ทำงาน
+---
+
+#### Visibility Level ใหม่ไม่ทำงาน
 
 1. ตรวจสอบ Database Enum ถูกอัปเดตแล้ว
 2. ตรวจสอบ Check Constraint
 3. ตรวจสอบ Policy logic
 4. ตรวจสอบ Controller validation
+
+---
+
+### คำสั่งที่มีประโยชน์
+
+**ดู Error Logs**:
+```bash
+# Laravel logs
+tail -f storage/logs/laravel.log
+
+# Nginx error logs
+sudo tail -f /var/log/nginx/error.log
+
+# PHP-FPM logs (PHP 8.2)
+sudo tail -f /var/log/php8.2-fpm.log
+
+# PHP-FPM logs (PHP 8.4)
+sudo tail -f /var/log/php8.4-fpm.log
+```
+
+**Clear All Caches**:
+```bash
+php artisan optimize:clear
+php artisan config:clear
+php artisan route:clear
+php artisan view:clear
+php artisan cache:clear
+```
+
+**ตรวจสอบ Queue Jobs**:
+```bash
+# ดู failed jobs
+php artisan queue:failed
+
+# Retry failed job
+php artisan queue:retry {id}
+
+# Retry all failed jobs
+php artisan queue:retry all
+```
 
 ---
 

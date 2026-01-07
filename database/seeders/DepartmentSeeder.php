@@ -2,7 +2,7 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
+use App\Models\Department;
 use Illuminate\Database\Seeder;
 
 class DepartmentSeeder extends Seeder
@@ -14,39 +14,46 @@ class DepartmentSeeder extends Seeder
     {
         $departments = [
             [
-                'name' => 'Information Technology Office',
                 'code' => 'IT',
+                'name' => 'Information Technology Office',
                 'description' => 'Information Technology and Systems Management',
                 'is_active' => true,
             ],
             [
-                'name' => 'Human Resources',
                 'code' => 'HR',
+                'name' => 'Human Resources',
                 'description' => 'Human Resources and Personnel Management',
                 'is_active' => true,
             ],
             [
-                'name' => 'Finance and Accounting',
                 'code' => 'FIN',
+                'name' => 'Finance and Accounting',
                 'description' => 'Finance, Accounting, and Budget Management',
                 'is_active' => true,
             ],
             [
-                'name' => 'Academic Affairs',
                 'code' => 'ACAD',
+                'name' => 'Academic Affairs',
                 'description' => 'Academic Programs and Curriculum Development',
                 'is_active' => true,
             ],
             [
-                'name' => 'Student Affairs',
                 'code' => 'SA',
+                'name' => 'Student Affairs',
                 'description' => 'Student Services and Support',
                 'is_active' => true,
             ],
         ];
 
         foreach ($departments as $department) {
-            \App\Models\Department::create($department);
+            Department::updateOrCreate(
+                ['code' => $department['code']],
+                [
+                    'name' => $department['name'],
+                    'description' => $department['description'],
+                    'is_active' => $department['is_active'],
+                ]
+            );
         }
     }
 }

@@ -6,8 +6,8 @@ use App\Models\Article;
 use App\Models\Category;
 use App\Models\Tag;
 use App\Models\User;
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Str;
 
 class ArticleSeeder extends Seeder
 {
@@ -19,24 +19,32 @@ class ArticleSeeder extends Seeder
         $categories = Category::all();
         $users = User::whereIn('role', ['admin', 'editor', 'contributor'])->get();
 
-        // Create tags
-        $tags = [];
-        $tagNames = ['Laravel', 'PHP', 'Database', 'API', 'Security', 'Performance', 'Testing', 'Deployment', 'Frontend', 'Backend'];
-        foreach ($tagNames as $name) {
-            $slug = \Illuminate\Support\Str::slug($name);
-
-            // If slug is empty (e.g., Thai characters), use a timestamp-based slug
-            if (empty($slug)) {
-                $slug = 'tag-' . time() . '-' . uniqid();
-            }
-
-            $tags[] = Tag::create([
-                'name' => $name,
-                'slug' => $slug,
-            ]);
+        if ($categories->isEmpty() || $users->isEmpty()) {
+            $this->command->warn('No categories or users found. Skipping ArticleSeeder.');
+            return;
         }
 
-        // Create sample articles
+        // Create or get tags (SAFE for re-run)
+        $tags = [];
+        $tagNames = [
+            'Laravel', 'PHP', 'Database', 'API', 'Security',
+            'Performance', 'Testing', 'Deployment', 'Frontend', 'Backend'
+        ];
+
+        foreach ($tagNames as $name) {
+            $slug = Str::slug($name);
+
+            if (empty($slug)) {
+                $slug = 'tag-' . uniqid();
+            }
+
+            $tags[] = Tag::updateOrCreate(
+                ['slug' => $slug],
+                ['name' => $name]
+            );
+        }
+
+        // Sample articles data
         $articles = [
             [
                 'title' => 'Getting Started with the Knowledge Base',
@@ -97,31 +105,30 @@ class ArticleSeeder extends Seeder
         ];
 
         foreach ($articles as $articleData) {
-            $category = $categories->random();
-            $author = $users->random();
+            $slug = Str::slug($articleData['title']);
 
-            $slug = \Illuminate\Support\Str::slug($articleData['title']);
-
-            // If slug is empty (e.g., Thai characters), use a timestamp-based slug
             if (empty($slug)) {
-                $slug = 'article-' . time() . '-' . uniqid();
+                $slug = 'article-' . uniqid();
             }
 
-            $article = Article::create([
-                'title' => $articleData['title'],
-                'slug' => $slug,
-                'content' => $articleData['content'],
-                'excerpt' => $articleData['excerpt'],
-                'category_id' => $category->id,
-                'author_id' => $author->id,
-                'status' => $articleData['status'],
-                'published_at' => $articleData['published_at'],
-                'view_count' => rand(10, 500),
-            ]);
+            // SAFE: prevent duplicate articles by slug
+            $article = Article::updateOrCreate(
+                ['slug' => $slug],
+                [
+                    'title' => $articleData['title'],
+                    'content' => $articleData['content'],
+                    'excerpt' => $articleData['excerpt'],
+                    'category_id' => $categories->random()->id,
+                    'author_id' => $users->random()->id,
+                    'status' => $articleData['status'],
+                    'published_at' => $articleData['published_at'],
+                    'view_count' => rand(10, 500),
+                ]
+            );
 
-            // Attach 2-4 random tags
-            $article->tags()->attach(
-                collect($tags)->random(rand(2, 4))->pluck('id')
+            // Attach tags without duplicates
+            $article->tags()->syncWithoutDetaching(
+                collect($tags)->random(rand(2, 4))->pluck('id')->toArray()
             );
         }
     }
