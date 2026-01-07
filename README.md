@@ -171,14 +171,534 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
 ## การติดตั้ง
 
-### 1. Clone Repository
+### ตัวเลือก A: การติดตั้งแบบครบวงจรบน Ubuntu Server + Nginx
+
+คู่มือนี้สำหรับการติดตั้งบนเซิร์ฟเวอร์ Ubuntu ใหม่ตั้งแต่ต้น เหมาะสำหรับ Production Server
+
+#### ข้อกำหนดเบื้องต้น
+- Ubuntu 22.04 LTS หรือสูงกว่า (แนะนำ)
+- สิทธิ์ root หรือ sudo access
+- อย่างน้อย 2GB RAM และ 20GB ดิสก์
+
+---
+
+#### 1. อัปเดตระบบและติดตั้ง Dependencies พื้นฐาน
+
+```bash
+# อัปเดต package list
+sudo apt update && sudo apt upgrade -y
+
+# ติดตั้ง dependencies พื้นฐาน
+sudo apt install -y software-properties-common curl wget git unzip
+```
+
+---
+
+#### 2. ติดตั้ง PHP 8.2 และ Extensions
+
+```bash
+# เพิ่ม PPA repository สำหรับ PHP
+sudo add-apt-repository ppa:ondrej/php -y
+sudo apt update
+
+# ติดตั้ง PHP 8.2 และ extensions ที่จำเป็น
+sudo apt install -y php8.2 php8.2-cli php8.2-fpm php8.2-common \
+    php8.2-mbstring php8.2-xml php8.2-bcmath php8.2-curl \
+    php8.2-gd php8.2-zip php8.2-pgsql php8.2-intl \
+    php8.2-dom php8.2-fileinfo php8.2-tokenizer
+
+# ตรวจสอบเวอร์ชัน PHP
+php --version
+```
+
+**คาดหวังผลลัพธ์**: PHP 8.2.x
+
+---
+
+#### 3. ติดตั้ง Composer
+
+```bash
+# ดาวน์โหลด Composer installer
+cd ~
+curl -sS https://getcomposer.org/installer -o composer-setup.php
+
+# ติดตั้ง Composer
+sudo php composer-setup.php --install-dir=/usr/local/bin --filename=composer
+
+# ลบไฟล์ installer
+rm composer-setup.php
+
+# ตรวจสอบการติดตั้ง
+composer --version
+```
+
+**คาดหวังผลลัพธ์**: Composer version 2.x
+
+---
+
+#### 4. ติดตั้ง PostgreSQL
+
+```bash
+# ติดตั้ง PostgreSQL
+sudo apt install -y postgresql postgresql-contrib
+
+# เริ่มต้นและเปิดใช้งาน PostgreSQL
+sudo systemctl start postgresql
+sudo systemctl enable postgresql
+
+# ตรวจสอบสถานะ
+sudo systemctl status postgresql
+```
+
+**ตั้งค่า Database และ User**:
+
+```bash
+# เข้าสู่ PostgreSQL shell
+sudo -u postgres psql
+
+# สร้าง database และ user (รันคำสั่งด้านล่างใน PostgreSQL prompt)
+```
+
+```sql
+-- สร้าง database
+CREATE DATABASE kmsystem;
+
+-- สร้าง user และกำหนดรหัสผ่าน (เปลี่ยน 'your_password' เป็นรหัสผ่านที่ต้องการ)
+CREATE USER kmsystem_user WITH ENCRYPTED PASSWORD 'your_password';
+
+-- ให้สิทธิ์ทั้งหมดแก่ user
+GRANT ALL PRIVILEGES ON DATABASE kmsystem TO kmsystem_user;
+
+-- (สำหรับ PostgreSQL 15+) ให้สิทธิ์ใน public schema
+\c kmsystem
+GRANT ALL ON SCHEMA public TO kmsystem_user;
+
+-- ออกจาก PostgreSQL
+\q
+```
+
+**ทดสอบการเชื่อมต่อ**:
+
+```bash
+psql -U kmsystem_user -d kmsystem -h localhost -W
+# กรอกรหัสผ่านที่ตั้งไว้ ถ้าเชื่อมต่อได้แสดงว่าสำเร็จ
+# พิมพ์ \q เพื่อออก
+```
+
+---
+
+#### 5. ติดตั้ง Node.js และ npm
+
+```bash
+# ติดตั้ง Node.js 20.x LTS (แนะนำ)
+curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+sudo apt install -y nodejs
+
+# ตรวจสอบเวอร์ชัน
+node --version
+npm --version
+```
+
+**คาดหวังผลลัพธ์**:
+- Node: v20.x
+- npm: v10.x
+
+---
+
+#### 6. ติดตั้งและตั้งค่า Nginx
+
+```bash
+# ติดตั้ง Nginx
+sudo apt install -y nginx
+
+# เริ่มต้นและเปิดใช้งาน Nginx
+sudo systemctl start nginx
+sudo systemctl enable nginx
+
+# ตรวจสอบสถานะ
+sudo systemctl status nginx
+```
+
+**ตั้งค่า Firewall (ถ้าใช้ UFW)**:
+
+```bash
+# อนุญาต HTTP และ HTTPS
+sudo ufw allow 'Nginx Full'
+sudo ufw allow OpenSSH
+sudo ufw enable
+```
+
+---
+
+#### 7. ติดตั้งโปรเจค Laravel
+
+**สร้างโฟลเดอร์สำหรับโปรเจค**:
+
+```bash
+# สร้างโฟลเดอร์สำหรับ web application
+sudo mkdir -p /var/www/kmsystem
+
+# เปลี่ยนเจ้าของโฟลเดอร์เป็น user ปัจจุบัน
+sudo chown -R $USER:$USER /var/www/kmsystem
+
+# เข้าสู่โฟลเดอร์
+cd /var/www/kmsystem
+```
+
+**Clone Repository** (หรือ upload โค้ด):
+
+```bash
+# Clone จาก Git (เปลี่ยน <repository-url> เป็น URL จริง)
+git clone <repository-url> .
+
+# หรือถ้า upload ไฟล์มา ให้แตกไฟล์ที่นี่
+```
+
+**ติดตั้ง Dependencies**:
+
+```bash
+# ติดตั้ง PHP dependencies
+composer install --optimize-autoloader --no-dev
+
+# ติดตั้ง Node dependencies
+npm install
+```
+
+---
+
+#### 8. ตั้งค่า Environment และ Application
+
+**สร้างไฟล์ .env**:
+
+```bash
+# คัดลอกจาก .env.example
+cp .env.example .env
+
+# แก้ไขไฟล์ .env
+nano .env
+```
+
+**แก้ไขค่าต่อไปนี้ใน .env**:
+
+```env
+APP_NAME="NBU KM System"
+APP_ENV=production
+APP_DEBUG=false
+APP_URL=http://yourdomain.com
+
+DB_CONNECTION=pgsql
+DB_HOST=127.0.0.1
+DB_PORT=5432
+DB_DATABASE=kmsystem
+DB_USERNAME=kmsystem_user
+DB_PASSWORD=your_password
+
+# สำหรับการส่งอีเมล (ดูคู่มือการตั้งค่า Gmail SMTP ด้านล่าง)
+MAIL_MAILER=smtp
+MAIL_HOST=smtp.gmail.com
+MAIL_PORT=587
+MAIL_USERNAME=your-email@gmail.com
+MAIL_PASSWORD=your-app-password
+MAIL_ENCRYPTION=tls
+MAIL_FROM_ADDRESS="your-email@gmail.com"
+MAIL_FROM_NAME="${APP_NAME}"
+```
+
+**สร้าง Application Key**:
+
+```bash
+php artisan key:generate
+```
+
+---
+
+#### 9. ตั้งค่า Storage และ Permissions
+
+```bash
+# สร้างโฟลเดอร์สำหรับอัปโหลดไฟล์
+mkdir -p public/uploads/attachments
+mkdir -p public/uploads/settings
+
+# สร้าง Symbolic Link
+php artisan storage:link
+
+# ตั้งค่า permissions
+sudo chown -R www-data:www-data /var/www/kmsystem
+sudo chmod -R 755 /var/www/kmsystem
+sudo chmod -R 775 /var/www/kmsystem/storage
+sudo chmod -R 775 /var/www/kmsystem/bootstrap/cache
+sudo chmod -R 775 /var/www/kmsystem/public/uploads
+```
+
+---
+
+#### 10. รัน Migrations และ Seeders
+
+```bash
+# รัน migrations
+php artisan migrate --force
+
+# รัน seeders (สร้างข้อมูลเริ่มต้น)
+php artisan db:seed --force
+```
+
+---
+
+#### 11. Build Frontend Assets
+
+```bash
+# Build production assets
+npm run build
+
+# ลบ node_modules เพื่อประหยัดพื้นที่ (ถ้าต้องการ)
+rm -rf node_modules
+```
+
+---
+
+#### 12. ตั้งค่า Nginx Server Block
+
+**สร้างไฟล์ configuration**:
+
+```bash
+sudo nano /etc/nginx/sites-available/kmsystem
+```
+
+**เพิ่มเนื้อหาต่อไปนี้** (เปลี่ยน `yourdomain.com` เป็น domain จริง):
+
+```nginx
+server {
+    listen 80;
+    listen [::]:80;
+
+    server_name yourdomain.com www.yourdomain.com;
+    root /var/www/kmsystem/public;
+
+    add_header X-Frame-Options "SAMEORIGIN";
+    add_header X-Content-Type-Options "nosniff";
+
+    index index.php;
+
+    charset utf-8;
+
+    # กำหนดขนาดไฟล์อัปโหลดสูงสุด
+    client_max_body_size 100M;
+
+    location / {
+        try_files $uri $uri/ /index.php?$query_string;
+    }
+
+    location = /favicon.ico { access_log off; log_not_found off; }
+    location = /robots.txt  { access_log off; log_not_found off; }
+
+    error_page 404 /index.php;
+
+    location ~ \.php$ {
+        fastcgi_pass unix:/var/run/php/php8.2-fpm.sock;
+        fastcgi_param SCRIPT_FILENAME $realpath_root$fastcgi_script_name;
+        include fastcgi_params;
+        fastcgi_hide_header X-Powered-By;
+    }
+
+    location ~ /\.(?!well-known).* {
+        deny all;
+    }
+}
+```
+
+**เปิดใช้งาน site**:
+
+```bash
+# สร้าง symbolic link
+sudo ln -s /etc/nginx/sites-available/kmsystem /etc/nginx/sites-enabled/
+
+# ลบ default site (ถ้าไม่ต้องการ)
+sudo rm /etc/nginx/sites-enabled/default
+
+# ทดสอบ configuration
+sudo nginx -t
+
+# Reload Nginx
+sudo systemctl reload nginx
+```
+
+---
+
+#### 13. ตั้งค่า PHP-FPM
+
+**แก้ไขไฟล์ php.ini**:
+
+```bash
+sudo nano /etc/php/8.2/fpm/php.ini
+```
+
+**แก้ไขค่าเหล่านี้**:
+
+```ini
+upload_max_filesize = 100M
+post_max_size = 100M
+memory_limit = 256M
+max_execution_time = 300
+```
+
+**Restart PHP-FPM**:
+
+```bash
+sudo systemctl restart php8.2-fpm
+```
+
+---
+
+#### 14. ตั้งค่า Laravel Optimizations
+
+```bash
+cd /var/www/kmsystem
+
+# Cache configuration
+php artisan config:cache
+
+# Cache routes
+php artisan route:cache
+
+# Cache views
+php artisan view:cache
+```
+
+---
+
+#### 15. ตั้งค่า Cron Job (สำหรับ Laravel Scheduler)
+
+```bash
+# แก้ไข crontab
+sudo crontab -e -u www-data
+```
+
+**เพิ่มบรรทัดนี้**:
+
+```cron
+* * * * * cd /var/www/kmsystem && php artisan schedule:run >> /dev/null 2>&1
+```
+
+---
+
+#### 16. (ทางเลือก) ติดตั้ง SSL Certificate ด้วย Let's Encrypt
+
+```bash
+# ติดตั้ง Certbot
+sudo apt install -y certbot python3-certbot-nginx
+
+# รับ SSL certificate
+sudo certbot --nginx -d yourdomain.com -d www.yourdomain.com
+
+# ทดสอบ auto-renewal
+sudo certbot renew --dry-run
+```
+
+Certbot จะแก้ไข Nginx configuration อัตโนมัติเพื่อใช้ HTTPS
+
+---
+
+#### 17. ทดสอบการทำงาน
+
+เปิดเบราว์เซอร์ไปที่:
+- **HTTP**: http://yourdomain.com
+- **HTTPS**: https://yourdomain.com (ถ้าติดตั้ง SSL แล้ว)
+
+**ข้อมูล Login เริ่มต้น**:
+```
+Email: admin@northbkk.ac.th
+Password: password
+```
+
+**⚠️ สำคัญ**: เปลี่ยนรหัสผ่าน Admin ทันทีหลังเข้าสู่ระบบครั้งแรก!
+
+---
+
+#### 18. การจัดการและ Monitoring
+
+**ดู Logs**:
+
+```bash
+# Laravel logs
+tail -f /var/www/kmsystem/storage/logs/laravel.log
+
+# Nginx access logs
+sudo tail -f /var/log/nginx/access.log
+
+# Nginx error logs
+sudo tail -f /var/log/nginx/error.log
+
+# PHP-FPM logs
+sudo tail -f /var/log/php8.2-fpm.log
+```
+
+**Restart Services**:
+
+```bash
+# Restart Nginx
+sudo systemctl restart nginx
+
+# Restart PHP-FPM
+sudo systemctl restart php8.2-fpm
+
+# Restart PostgreSQL
+sudo systemctl restart postgresql
+```
+
+**อัปเดตโปรเจค**:
+
+```bash
+cd /var/www/kmsystem
+
+# Pull latest code
+git pull origin main
+
+# ติดตั้ง dependencies ใหม่
+composer install --optimize-autoloader --no-dev
+npm install && npm run build
+
+# รัน migrations ใหม่
+php artisan migrate --force
+
+# Clear และ cache ใหม่
+php artisan optimize:clear
+php artisan config:cache
+php artisan route:cache
+php artisan view:cache
+
+# ตั้งค่า permissions
+sudo chown -R www-data:www-data /var/www/kmsystem
+```
+
+---
+
+#### Security Checklist สำหรับ Production
+
+- [ ] ตั้งค่า `APP_DEBUG=false` ใน `.env`
+- [ ] ตั้งค่า `APP_ENV=production` ใน `.env`
+- [ ] ติดตั้ง SSL Certificate (Let's Encrypt)
+- [ ] เปลี่ยนรหัสผ่าน PostgreSQL และ Admin user
+- [ ] ตั้งค่า Firewall (UFW) อนุญาตเฉพาะ port ที่จำเป็น
+- [ ] ตั้งค่า Fail2ban สำหรับป้องกัน brute force
+- [ ] Backup ฐานข้อมูลสม่ำเสมอ
+- [ ] ตรวจสอบ file permissions
+- [ ] ปิด directory listing ใน Nginx
+- [ ] อัปเดต system และ packages สม่ำเสมอ
+
+---
+
+### ตัวเลือก B: การติดตั้งแบบพื้นฐาน (Development)
+
+สำหรับการพัฒนาบนเครื่อง local
+
+#### 1. Clone Repository
 
 ```bash
 git clone <repository-url>
 cd kmsystem
 ```
 
-### 2. ติดตั้ง Dependencies
+#### 2. ติดตั้ง Dependencies
 
 ```bash
 # ติดตั้ง PHP dependencies
@@ -261,7 +781,7 @@ npm run dev
 ### 10. รันเซิร์ฟเวอร์
 
 ```bash
-php artisan serve
+
 ```
 
 เข้าถึงระบบได้ที่: `http://localhost:8000`
