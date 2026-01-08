@@ -1712,6 +1712,100 @@ Mail::raw('Test', function($msg) {
 
 ---
 
+#### หน้า Admin Settings ไม่แสดงอะไร
+
+**ปัญหา**: เข้าหน้า `/admin/settings` แล้วไม่มีการตั้งค่าแสดงออกมา
+
+**สาเหตุ**: ยังไม่ได้รัน `SettingsSeeder` ซึ่งจะสร้างข้อมูล settings ในฐานข้อมูล
+
+**วิธีแก้**:
+
+```bash
+cd /var/www/kmsystem
+
+# รัน SettingsSeeder เพื่อสร้างข้อมูล settings
+php artisan db:seed --class=SettingsSeeder --force
+
+# Clear cache
+php artisan config:clear
+php artisan cache:clear
+```
+
+**ตรวจสอบว่ามี settings แล้ว**:
+
+```bash
+php artisan tinker
+```
+
+```php
+// ตรวจสอบจำนวน settings
+\App\Models\Setting::count();
+
+// ถ้าได้ 0 แสดงว่ายังไม่มีข้อมูล ให้รัน seeder ข้างบน
+// ถ้าได้ตัวเลข > 0 แสดงว่ามีข้อมูลแล้ว
+
+exit
+```
+
+**หลังรัน Seeder แล้ว** เปิดหน้า `/admin/settings` จะเห็น 4 กลุ่มการตั้งค่า:
+- **General** - ชื่อเว็บ, คำอธิบาย, โลโก้, จำนวนรายการต่อหน้า, ข้อความหน้าแรก
+- **Contact** - อีเมล, เบอร์โทร, ที่อยู่
+- **Footer** - ข้อความลิขสิทธิ์, เกี่ยวกับ
+- **Social** - Facebook, Twitter, YouTube, LINE
+
+---
+
+#### ไม่สามารถ Login ด้วย admin@northbkk.ac.th ได้
+
+**ปัญหา**: ติดตั้งโปรเจคก่อนหน้านี้ และไม่สามารถ login ด้วย email ใหม่ได้
+
+**สาเหตุ**: Seeder เก่าใช้ email `admin@kmsystem.local` แต่โค้ดใหม่เปลี่ยนเป็น `admin@northbkk.ac.th`
+
+**วิธีแก้**:
+
+**ตัวเลือก 1**: ลอง login ด้วย email เดิม
+```
+Email: admin@kmsystem.local
+Password: password
+```
+
+**ตัวเลือก 2**: อัปเดตข้อมูลให้ตรงกับโค้ดใหม่ (แนะนำ)
+```bash
+cd /var/www/kmsystem
+
+# รัน seeder เพื่ออัปเดต email
+php artisan db:seed --force
+
+# ตอนนี้ login ได้ด้วย
+# Email: admin@northbkk.ac.th
+# Password: password
+```
+
+**ตัวเลือก 3**: เปลี่ยนรหัสผ่านหรือ email ผ่าน Tinker
+```bash
+php artisan tinker
+```
+
+```php
+// ดู admin users ทั้งหมด
+\App\Models\User::where('role', 'admin')->get(['id', 'name', 'email']);
+
+// เปลี่ยนรหัสผ่าน
+$admin = \App\Models\User::where('email', 'admin@kmsystem.local')->first();
+$admin->password = \Hash::make('password');
+$admin->save();
+
+// หรือเปลี่ยน email และรหัสผ่านพร้อมกัน
+$admin = \App\Models\User::where('email', 'admin@kmsystem.local')->first();
+$admin->email = 'admin@northbkk.ac.th';
+$admin->password = \Hash::make('password');
+$admin->save();
+
+exit
+```
+
+---
+
 ### คำสั่งที่มีประโยชน์
 
 **ดู Error Logs**:
